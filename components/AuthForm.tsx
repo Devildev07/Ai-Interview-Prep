@@ -7,11 +7,17 @@ import { email, z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import Image from "next/image";
-import { FormType } from "@/constants";
+import { APP_NAME, FormType } from "@/constants";
 import Link from "next/link";
 import { toast } from "sonner";
 import FormField from "./FormField";
 import { useRouter } from "next/navigation";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+import { auth } from "@/firebase/client";
+import { signIn, signUp } from "@/lib/actions/auth.action";
 
 const authFormSchema = (type: FormType) => {
   return z.object({
@@ -34,16 +40,51 @@ const AuthForm = ({ type }: { type: FormType }) => {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       if (type === FormType.SIGNUP) {
+        const { name, email, password } = values;
+
+        const createUserCred = await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+        const result = await signUp({
+          uid: createUserCred.user.uid,
+          name: name!,
+          email,
+          password,
+        });
+
+        if (!result?.success) {
+          return toast.error(result?.message);
+        }
+
         toast.success(`Account created successfully ${values}`);
         router.push("/sign-in");
-        // console.log("SIGN UP", values);
       } else {
+        const { email, password } = values;
+        const userCred = await signInWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+        const idToken = await userCred.user.getIdToken();
+
+        if (!idToken) {
+          return toast.error("Sign in Failed");
+        }
+
+        await signIn({
+          email,
+          idToken,
+        });
+
         toast.success("Sign in successfully");
         router.push("/");
-        // console.log("SIGN IN", values);
       }
     } catch (error) {
       toast.error(`There is an error: ${error} `);
@@ -57,7 +98,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
       <div className="flex flex-col gap-6 card py-14 px-10">
         <div className="flex flex-row gap-2 justify-center">
           <Image src="/logo.svg" alt="logo" height={32} width={38} />
-          <h2 className="text-primary-100">InterviewForge</h2>
+          <h2 className="text-primary-100">{APP_NAME}</h2>
         </div>
         <h3>Practice job interview with AI</h3>
         <Form {...form}>
