@@ -1,17 +1,39 @@
-import { generateText } from "ai";
+import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { db } from "@/firebase/admin";
 import { getRandomInterviewCover } from "@/lib/utils";
+import { z } from "zod";
 
 export async function GET() {
   return Response.json({ success: true, data: "Api call" }, { status: 200 });
 }
 
 export async function POST(req: Request) {
-  const { type, role, level, techstack, amount, userid } = await req.json();
   try {
-    const { text: questions } = await generateText({
+    const body = await req.json();
+    console.log("Request body -------->>>", body);
+    const { type, role, level, techstack, amount, userid } = body;
+
+    // Validate required fields
+    if (!type || !role || !level || !techstack || !amount || !userid) {
+      return Response.json(
+        { success: false, error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    // Check if API key exists
+    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    if (!apiKey) {
+      return Response.json(
+        { success: false, error: "Google AI API key is not configured" },
+        { status: 500 }
+      );
+    }
+
+    const { object: questions } = await generateObject({
       model: google("gemini-2.0-flash-001"),
+      schema: z.array(z.string()),
       prompt: `Prepare questions for a job interview.
         The job role is ${role}.
         The job experience level is ${level}.
@@ -26,13 +48,14 @@ export async function POST(req: Request) {
         Thank you! <3
     `,
     });
+    console.log("questions -------->>>", questions);
 
     const interview = {
       role: role,
       type: type,
       level: level,
       techstack: techstack.split(","),
-      questions: JSON.parse(questions),
+      questions: questions,
       userId: userid,
       finalized: true,
       coverImage: getRandomInterviewCover(),
@@ -40,9 +63,12 @@ export async function POST(req: Request) {
     };
 
     await db.collection("interviews").add(interview);
-    return Response.json({ success: true }, { status: 200 });
+    return Response.json({ success: true, data: questions }, { status: 200 });
   } catch (error) {
-    console.log("error -------->>>", error);
-    return Response.json({ success: false, error }, { status: 500 });
+    console.error("Error:", error);
+    return Response.json(
+      { success: false, error: (error as Error).message },
+      { status: 500 }
+    );
   }
 }
