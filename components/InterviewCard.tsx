@@ -1,13 +1,12 @@
 import dayjs from "dayjs";
 import Image from "next/image";
-import React from "react";
-import { Button } from "./ui/button";
 import Link from "next/link";
+import { Button } from "./ui/button";
 import { getRandomInterviewCover } from "@/lib/utils";
 import DisplayTechIcons from "./DisplayTechIcons";
 
 const InterviewCard = ({
-  interviewId,
+  id,
   userId,
   role,
   type,
@@ -60,13 +59,10 @@ const InterviewCard = ({
 
           <Button className="btn-primary">
             <Link
-              href={
-                feedback
-                  ? `/interview/${interviewId}/feedback`
-                  : `/interview/${interviewId}`
-              }
-            />
-            {feedback ? `Check Feedback` : `View Interview`}
+              href={feedback ? `/interview/${id}/feedback` : `/interview/${id}`}
+            >
+              {feedback ? "Check Feedback" : "View Interview"}
+            </Link>
           </Button>
         </div>
       </div>

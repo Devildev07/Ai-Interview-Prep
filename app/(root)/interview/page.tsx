@@ -6,7 +6,11 @@ const page = async () => {
   return (
     <div className=" root-layout flex flex-col ">
       <h3>Interview generation</h3>
-      <Agent userName={user?.name} userId={user?.id} type="generate " />
+      <Agent
+        userName={user?.name ?? "Guest"}
+        userId={user?.id}
+        type="generate"
+      />
     </div>
   );
 };
