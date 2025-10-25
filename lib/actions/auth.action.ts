@@ -24,9 +24,9 @@ export async function signUp(params: SignUpParams) {
       success: true,
       message: "Account created successfully. Please sign in.",
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.log("error -------->>>", error);
-    if (error?.code === "auth/email-already-exists") {
+    if ((error as { code?: string })?.code === "auth/email-already-exists") {
       return {
         success: false,
         message: "Email already in use",
@@ -95,4 +95,51 @@ export async function getCurrentUser(): Promise<User | null> {
 export async function isAuthenticate() {
   const user = await getCurrentUser();
   return !!user;
+}
+
+export async function getInterviewsById(
+  userId: string
+): Promise<Interview[] | null> {
+  try {
+    const interviewsSnapshot = await db
+      .collection("interviews")
+      .where("userId", "==", userId)
+      .orderBy("createdAt", "desc")
+      .get();
+
+    const interviews = interviewsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return interviews as Interview[];
+  } catch (error) {
+    console.log("error -------->>>", error);
+    return null;
+  }
+}
+
+export async function getLatestInterviews(
+  params: GetLatestInterviewsParams
+): Promise<Interview[] | null> {
+  try {
+    const { userId, limit = 20 } = params;
+    const interviewsSnapshot = await db
+      .collection("interviews")
+      .orderBy("createdAt", "desc")
+      .where("finalized", "==", true)
+      .where("userId", "!=", userId)
+      .limit(limit)
+      .get();
+
+    const interviews = interviewsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return interviews as Interview[];
+  } catch (error) {
+    console.log("error -------->>>", error);
+    return null;
+  }
 }
