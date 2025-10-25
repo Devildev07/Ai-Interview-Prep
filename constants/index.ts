@@ -152,38 +152,26 @@ End the conversation on a polite and positive note.
   },
 };
 
+const categoryFeedbackSchema = z.object({
+  score: z.number().describe("Score from 0-100 for this category"),
+  comment: z.string().describe("Detailed comment for this category"),
+});
 export const feedbackSchema = z.object({
-  totalScore: z.number(),
-  categoryScores: z.tuple([
-    z.object({
-      name: z.literal("Communication Skills"),
-      score: z.number(),
-      comment: z.string(),
-    }),
-    z.object({
-      name: z.literal("Technical Knowledge"),
-      score: z.number(),
-      comment: z.string(),
-    }),
-    z.object({
-      name: z.literal("Problem Solving"),
-      score: z.number(),
-      comment: z.string(),
-    }),
-    z.object({
-      name: z.literal("Cultural Fit"),
-      score: z.number(),
-      comment: z.string(),
-    }),
-    z.object({
-      name: z.literal("Confidence and Clarity"),
-      score: z.number(),
-      comment: z.string(),
-    }),
-  ]),
-  strengths: z.array(z.string()),
-  areasForImprovement: z.array(z.string()),
-  finalAssessment: z.string(),
+  totalScore: z.number().describe("Overall score 0-100"),
+
+  categoryScores: z.object({
+    communication: categoryFeedbackSchema.describe("Communication Skills"),
+    technicalKnowledge: categoryFeedbackSchema.describe("Technical Knowledge"),
+    problemSolving: categoryFeedbackSchema.describe("Problem-Solving"),
+    culturalFit: categoryFeedbackSchema.describe("Cultural & Role Fit"),
+    confidence: categoryFeedbackSchema.describe("Confidence & Clarity"),
+  }),
+
+  strengths: z.array(z.string()).describe("List of candidate strengths"),
+  areasForImprovement: z
+    .array(z.string())
+    .describe("List of areas for improvement"),
+  finalAssessment: z.string().describe("Final overall assessment summary"),
 });
 
 export const interviewCovers = [

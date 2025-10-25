@@ -1,4 +1,4 @@
-import { generateObject } from "ai";
+import { generateObject, generateText } from "ai";
 import { google } from "@ai-sdk/google";
 import { db } from "@/firebase/admin";
 import { getRandomInterviewCover } from "@/lib/utils";
@@ -9,30 +9,21 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  console.log("await req.json() -------->>>", await req.json());
+  //   const { type, role, level, techstack, amount, userid } = await req.json();
+  const { type, role, level, techstack, amount, userId } = await req.json();
+
+  // Validate required fields
+  if (!type || !role || !level || !techstack || !amount || !userId) {
+    return Response.json(
+      { success: false, error: "Missing required fields" },
+      { status: 400 }
+    );
+  }
+
   try {
-    const body = await req.json();
-    console.log("Request body -------->>>", body);
-    const { type, role, level, techstack, amount, userid } = body;
-
-    // Validate required fields
-    if (!type || !role || !level || !techstack || !amount || !userid) {
-      return Response.json(
-        { success: false, error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    // Check if API key exists
-    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-    if (!apiKey) {
-      return Response.json(
-        { success: false, error: "Google AI API key is not configured" },
-        { status: 500 }
-      );
-    }
-
     const { object: questions } = await generateObject({
-      model: google("gemini-2.0-flash-001"),
+      model: google("gemini-1.5-flash-latest"),
       schema: z.array(z.string()),
       prompt: `Prepare questions for a job interview.
         The job role is ${role}.
@@ -56,16 +47,16 @@ export async function POST(req: Request) {
       level: level,
       techstack: techstack.split(","),
       questions: questions,
-      userId: userid,
+      userId: userId,
       finalized: true,
       coverImage: getRandomInterviewCover(),
       createdAt: new Date().toISOString(),
     };
 
     await db.collection("interviews").add(interview);
-    return Response.json({ success: true, data: questions }, { status: 200 });
+    return Response.json({ success: true }, { status: 200 });
   } catch (error) {
-    console.error("Error:", error);
+    console.log("error -------->>>", error);
     return Response.json(
       { success: false, error: (error as Error).message },
       { status: 500 }
