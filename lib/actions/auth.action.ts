@@ -96,3 +96,20 @@ export async function isAuthenticate() {
   const user = await getCurrentUser();
   return !!user;
 }
+
+export async function signOut() {
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete("session");
+    return {
+      success: true,
+      message: "Signed out successfully",
+    };
+  } catch (error) {
+    console.log("error -------->>>", error);
+    return {
+      success: false,
+      message: "Failed to sign out",
+    };
+  }
+}
