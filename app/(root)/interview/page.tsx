@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/actions/auth.action";
 const page = async () => {
   const user = await getCurrentUser();
   return (
-    <div className=" root-layout flex flex-col ">
+    <div className="flex flex-col gap-8">
       <h3>Interview generation</h3>
       <Agent
         userName={user?.name ?? "Guest"}
