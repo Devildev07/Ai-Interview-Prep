@@ -40,3 +40,4 @@ interviewforge-306d9-firebase-adminsdk-fbsvc-7cda63ccfa.json
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+prd.md

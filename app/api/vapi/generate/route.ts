@@ -1,8 +1,9 @@
-import { generateObject, generateText } from "ai";
+import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { db } from "@/firebase/admin";
 import { getRandomInterviewCover } from "@/lib/utils";
 import { z } from "zod";
+import { reserveDailyCall } from "@/lib/actions/general.actions";
 
 export async function GET() {
   return Response.json({ success: true, data: "Api call" }, { status: 200 });
@@ -22,6 +23,15 @@ export async function POST(req: Request) {
   }
 
   try {
+    // Enforce daily usage limit for generation as well
+    const reserve = await reserveDailyCall({ userId, kind: "generate" });
+    if (!reserve.allowed) {
+      return Response.json(
+        { success: false, error: "Daily limit reached. Try again tomorrow." },
+        { status: 429 }
+      );
+    }
+
     const { object: questions } = await generateObject({
       model: google("gemini-1.5-flash-latest"),
       schema: z.array(z.string()),

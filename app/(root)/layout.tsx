@@ -18,7 +18,7 @@ const RootLayout = async ({ children }: { children: ReactNode }) => {
           <Image src="/logo.svg" alt="Logo" width={38} height={32} />
           <h2 className="text-primary-100">{APP_NAME}</h2>
         </Link>
-        <NavigationMenu userName={user?.name} />
+        <NavigationMenu userName={user?.name} userId={user?.id} />
       </nav>
       {children}
     </div>

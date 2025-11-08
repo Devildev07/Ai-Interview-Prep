@@ -4,10 +4,12 @@ import { cn } from "@/lib/utils";
 import { User2Icon } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { vapi } from "@/lib/vapi.sdk";
 import { interviewer } from "@/constants";
 import { createFeedback } from "@/lib/actions/general.actions";
+import { reserveDailyCall } from "@/lib/actions/general.actions";
+import { toast } from "sonner";
 
 enum CallStatus {
   INACTIVE = "INACTIVE",
@@ -31,7 +33,7 @@ const Agent = ({
   const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [messages, setMessages] = useState<SavedMessage[]>([]);
-  const [lastMessage, setLastMessage] = useState<string>("");
+  // const [lastMessage, setLastMessage] = useState<string>("");
 
   useEffect(() => {
     const onCallStart = () => setCallStatus(CallStatus.ACTIVE);
@@ -66,6 +68,25 @@ const Agent = ({
     };
   }, []);
 
+  const handleGenerateFeedback = useCallback(
+    async (messages: SavedMessage[]) => {
+      console.log("Generate feedback here.");
+      const { success, feedbackId } = await createFeedback({
+        interviewId: interviewId!,
+        userId: userId!,
+        transcript: messages,
+      });
+
+      if (success && feedbackId) {
+        router.push(`/interview/${interviewId}/feedback`);
+      } else {
+        console.log("Error saving feedback");
+        router.push("/");
+      }
+    },
+    [interviewId, userId, router]
+  );
+
   useEffect(() => {
     if (callStatus === CallStatus.FINISHED) {
       if (type === "generate") {
@@ -74,25 +95,35 @@ const Agent = ({
         handleGenerateFeedback(messages);
       }
     }
-  }, [messages, callStatus, type, userId]);
-
-  const handleGenerateFeedback = async (messages: SavedMessage[]) => {
-    console.log("Generate feedback here.");
-    const { success, feedbackId } = await createFeedback({
-      interviewId: interviewId!,
-      userId: userId!,
-      transcript: messages,
-    });
-
-    if (success && feedbackId) {
-      router.push(`/interview/${interviewId}/feedback`);
-    } else {
-      console.log("Error saving feedback");
-      router.push("/");
-    }
-  };
+  }, [messages, callStatus, type, userId, router, handleGenerateFeedback]);
 
   const handleCall = async () => {
+    // Reserve a daily call before starting
+    try {
+      if (!userId) {
+        toast.error("You must be signed in to start a call.");
+        return;
+      }
+      const kind = type === "generate" ? "generate" : "interview";
+      const res = await reserveDailyCall({ userId: userId!, kind });
+      if (!res.allowed) {
+        setCallStatus(CallStatus.INACTIVE);
+        toast.error(
+          "Daily limit reached. Come back tomorrow for an interview."
+        );
+        return;
+      }
+      // Notify navbar to refresh usage count
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("usage:changed"));
+      }
+    } catch (e) {
+      setCallStatus(CallStatus.INACTIVE);
+      console.error(e);
+      toast.error("Unable to start call right now. Please try again.");
+      return;
+    }
+
     setCallStatus(CallStatus.CONNECTING);
     const workflowId = process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!;
 

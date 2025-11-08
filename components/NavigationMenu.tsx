@@ -9,16 +9,44 @@ import {
 } from "@/components/ui/popover";
 import UserInfo from "./UserInfo";
 import LogoutButton from "./LogoutButton";
+import { useEffect, useState } from "react";
+import { getDailyUsage } from "@/lib/actions/general.actions";
 
 interface NavigationMenuProps {
   userName?: string;
+  userId?: string;
 }
 
-const NavigationMenu = ({ userName }: NavigationMenuProps) => {
+const NavigationMenu = ({ userName, userId }: NavigationMenuProps) => {
+  const [usage, setUsage] = useState<{
+    remaining: number;
+    limit: number;
+  } | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      if (!userId) return;
+      const data = await getDailyUsage(userId);
+      if (mounted) setUsage({ remaining: data.remaining, limit: data.limit });
+    };
+    load();
+
+    const onChanged = () => load();
+    window.addEventListener("usage:changed", onChanged);
+    return () => {
+      mounted = false;
+      window.removeEventListener("usage:changed", onChanged);
+    };
+  }, [userId]);
+
   return (
     <>
       {/* Desktop/Tablet View */}
       <div className="hidden md:flex items-center gap-4">
+        <div className="text-xs text-muted-foreground bg-dark-200 rounded-md py-1 px-2">
+          Calls: {usage ? `${usage.remaining}/${usage.limit}` : "-/-"}
+        </div>
         <UserInfo userName={userName} />
         <LogoutButton />
       </div>
@@ -42,6 +70,9 @@ const NavigationMenu = ({ userName }: NavigationMenuProps) => {
                 <span className="text-sm font-medium">
                   {userName || "User"}
                 </span>
+              </div>
+              <div className="px-2 py-1 text-xs text-muted-foreground">
+                Calls: {usage ? `${usage.remaining}/${usage.limit}` : "-/-"}
               </div>
               <div className="border-t pt-2">
                 <LogoutButton />
