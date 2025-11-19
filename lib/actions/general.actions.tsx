@@ -282,7 +282,7 @@ export async function getFeedbackByInterviewId(
       .limit(1)
       .get();
 
-    console.log("Feedback snapshot empty?", feedbackSnapshot.empty);
+    // console.log("Feedback snapshot empty?", feedbackSnapshot.empty);
 
     if (feedbackSnapshot.empty) {
       return null;
