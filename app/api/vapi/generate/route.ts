@@ -10,7 +10,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  console.log("await req.json() -------->>>", await req.json());
+  // console.log("await req.json() -------->>>", await req.json());
   //   const { type, role, level, techstack, amount, userid } = await req.json();
   const { type, role, level, techstack, amount, userId } = await req.json();
 
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
         Thank you! <3
     `,
     });
-    console.log("questions -------->>>", questions);
+    // console.log("questions -------->>>", questions);
 
     const interview = {
       role: role,
